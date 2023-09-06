@@ -9,27 +9,31 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+
+import javax.sql.DataSource;
 
 @Configuration
 public class DemoSecurityConfig {
 
     @Bean
-    public InMemoryUserDetailsManager userDetailsManager(){
-        UserDetails rafael = User.builder()
-                .username("rafael")
-                .password("{noop}test321")
-                .roles("EMPLOYEE","MANAGER","ADMIN")
-                .build();
+    public UserDetailsManager userDetailsManager(DataSource dataSource){
+        JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
 
-        UserDetails john = User.builder()
-                .username("john")
-                .password("{noop}test123")
-                .roles("EMPLOYEE")
-                .build();
+        //define query to retrieve a user by username
+        jdbcUserDetailsManager.setUsersByUsernameQuery(
+                "select user_id, pw, active from members where user_id=?"
+        );
 
-    return new InMemoryUserDetailsManager(rafael, john);
+        //define a query to retrieve the authorities/roles
+        jdbcUserDetailsManager.setAuthoritiesByUsernameQuery(
+                "select user_id, role from roles where user_id=?"
+        );
 
+
+        return jdbcUserDetailsManager;
     }
 
     @Bean
@@ -50,5 +54,27 @@ public class DemoSecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable);
         return http.build();
     }
+
+
+
+    /*
+    @Bean
+    public InMemoryUserDetailsManager userDetailsManager(){
+        UserDetails rafael = User.builder()
+                .username("rafael")
+                .password("{noop}test321")
+                .roles("EMPLOYEE","MANAGER","ADMIN")
+                .build();
+
+        UserDetails john = User.builder()
+                .username("john")
+                .password("{noop}test123")
+                .roles("EMPLOYEE")
+                .build();
+
+    return new InMemoryUserDetailsManager(rafael, john);
+
+    }
+    */
 
 }
